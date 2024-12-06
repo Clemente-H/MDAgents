@@ -8,6 +8,10 @@ from pptree import Node
 import google.generativeai as genai
 from openai import OpenAI
 from pptree import *
+from dotenv import load_dotenv
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
 class Agent:
     def __init__(self, instruction, role, examplers=None, model_info='gpt-4o-mini', img_path=None):
@@ -451,7 +455,8 @@ def process_intermediate_query(question, examplers, model, args):
     _decision = moderator.temp_responses(f"Given each agent's final answer, please review each agent's opinion and make the final answer to the question by taking majority vote. Your answer should be like below format:\nAnswer: C) 2th pharyngeal arch\n{final_answer}\n\nQuestion: {question}", img_path=None)
     final_decision = {'majority': _decision}
 
-    print(f"{'\U0001F468\u200D\u2696\uFE0F'} moderator's final decision (by majority vote):", _decision)
+    #print(f"{'\U0001F468\u200D\u2696\uFE0F'} moderator's final decision (by majority vote):" {_decision})
+    print(f"👨‍⚖️ moderator's final decision (by majority vote): {_decision}")
     print()
 
     return final_decision
