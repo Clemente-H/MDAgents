@@ -1,4 +1,11 @@
 from pptree import Node
+from typing import Union
+from pathlib import Path
+import base64
+import pandas as pd
+import os
+import json
+from datetime import datetime
 
 def parse_hierarchy(info, emojis):
     moderator = Node('moderator (\U0001F468\u200D\u2696\uFE0F)')
@@ -42,7 +49,7 @@ def parse_group_info(group_info):
     parsed_info['group_goal'] = "".join(lines[0].split('-')[1:])
     
     for line in lines[1:]:
-        if line.startswith('Member'):
+        if line.startswith('- **Member'):
             member_info = line.split(':')
             member_role_description = member_info[1].split('-')
             
@@ -55,3 +62,18 @@ def parse_group_info(group_info):
             })
     
     return parsed_info
+
+
+def check_image_size(image_path, max_size_mb=5):
+    # Convertimos MB a bytes (5MB = 5 * 1024 * 1024 bytes)
+    max_size_bytes = max_size_mb * 1024 * 1024
+    
+    # Obtenemos el tamaño del archivo
+    file_size = os.path.getsize(image_path)
+    
+    return file_size <= max_size_bytes, file_size
+
+
+def encode_image(image_path:str) -> str:
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
