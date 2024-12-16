@@ -40,7 +40,7 @@ def process_basic_query(question, examplers, model, args, img_path=None):
 
 
 def process_intermediate_query(question, examplers, model, args, img_path=None):
-    cprint("[INFO] Step 1. Expert Recruitment", 'yellow', attrs=['blink'])
+    print("[INFO] Step 1. Expert Recruitment", 'yellow', attrs=['blink'])
     recruit_prompt = f"You are an experienced medical expert who recruits a group of experts..."
 
     tmp_agent = Agent(instruction=recruit_prompt, role='recruiter', model_info='gpt-4o-mini')
@@ -138,12 +138,14 @@ def process_intermediate_query(question, examplers, model, args, img_path=None):
     return final_decision
 
 def process_advanced_query(question, model, args, img_path=None):
-    print("[STEP 1] Recruitment")
+    history_process = ""
+    #print("[STEP 1] Recruitment")
+    history_process += f"[STEP 1] Recruitment \n\n"
     group_instances = []
     # Reclutamiento de múltiples equipos (MDT), ver código original.
     recruit_prompt = f"""You are an experienced medical expert. 
     Given the complex medical query, you need to organize Multidisciplinary Teams (MDTs) and the members in MDT to
-     make accurate and robust answer."""
+    make accurate and robust answer."""
     tmp_agent = Agent(instruction=recruit_prompt, role='recruiter', model_info=model)
     tmp_agent.chat(recruit_prompt, img_path=img_path)
 
@@ -177,7 +179,8 @@ def process_advanced_query(question, model, args, img_path=None):
         Member 2: Clinical Decision Specialist - Coordinates the different recommendations from the various teams and formulates a comprehensive treatment plan.
         Member 3: Advanced Diagnostic Support - Utilizes advanced diagnostic tools and techniques to confirm the exact extent and cause of nerve damage, aiding in the final decision.
         
-        Above is just an example, thus, you should organize your own unique MDTs but you should include Initial Assessment Team (IAT) and Final Review and Decision Team (FRDT) in your recruitment plan. When you return your answer, please strictly refer to the above format.""",img_path)
+        Above is just an example, thus, you should organize your own unique MDTs but you should include Initial Assessment Team (IAT) and Final Review and Decision Team (FRDT) in your recruitment plan. When you return your answer, please strictly refer to the above format.""",
+        img_path)
 
 
     groups = [group.strip() for group in recruited.split("Group") if group.strip()]
@@ -187,14 +190,17 @@ def process_advanced_query(question, model, args, img_path=None):
     group_strings.pop(0)
     for i1, gs in enumerate(group_strings):
         res_gs = parse_group_info(gs)
-        print(f"Group {i1+1} - {res_gs['group_goal']}")
+    #    print(f"Group {i1+1} - {res_gs['group_goal']}")
+        history_process += f"Group {i1+1} - {res_gs['group_goal']}\n"
         for i2, member in enumerate(res_gs['members']):
-            print(f" Member {i2+1} ({member['role']}): {member['expertise_description']}")
+    #        print(f" Member {i2+1} ({member['role']}): {member['expertise_description']}")
+            history_process += f" Member {i2+1} ({member['role']}): {member['expertise_description']}\n"
 
         group_instance = Group(res_gs['group_goal'], res_gs['members'], question, examplers=None, img_path=img_path)
         group_instances.append(group_instance)
 
-    print("[STEP 2] Initial assessment from each group")
+    #print("[STEP 2] Initial assessment from each group")
+    history_process += f"\n[STEP 2] Initial assessment from each group\n\n"
     # Interacciones iniciales de grupos, etc.
     # Por simplicidad, asumimos un flujo similar:
     initial_assessments = []
@@ -202,27 +208,28 @@ def process_advanced_query(question, model, args, img_path=None):
         if 'initial' in group_instance.goal.lower() or 'iap' in group_instance.goal.lower():
             init_assessment = group_instance.interact(comm_type='internal',message=None, img_path=img_path)
             initial_assessments.append([group_instance.goal, init_assessment])
-    
+    #print("Initial Assessment", initial_assessments)
+
     initial_assessment_report = ""
-    print("Initial Assessment", init_assessment)
-    print("Reports:")
     for idx, init_assess in enumerate(initial_assessments):
         initial_assessment_report += f"Group {idx+1} - {init_assess[0]}\n{init_assess[1]}\n\n"
-        print(idx)
-        print(initial_assessment_report)
-    # Otros MDTs
+    #print("Reports:", initial_assessment_report)
+    history_process += initial_assessment_report
+    # Otros MDTs STEP 2.2
     assessments = []
     for group_instance in group_instances:
         if 'initial' not in group_instance.goal.lower() and 'iap' not in group_instance.goal.lower():
             assessment = group_instance.interact(comm_type='internal', img_path=img_path)
             assessments.append([group_instance.goal, assessment])
-    print("otros Assessments", assessments)
+    #print("otros Assessments", assessments)
 
     assessment_report = ""
     for idx, assess in enumerate(assessments):
         assessment_report += f"Group {idx+1} - {assess[0]}\n{assess[1]}\n\n"
-    
-    # Equipo final para decisión
+    #print('Otros Assessment report: ', assessment_report)
+    history_process += assessment_report
+
+    #STEP 2.3 Equipo final para decisión
     final_decisions = []
     for group_instance in group_instances:
         if 'review' in group_instance.goal.lower() or 'decision' in group_instance.goal.lower():
@@ -232,9 +239,12 @@ def process_advanced_query(question, model, args, img_path=None):
     compiled_report = ""
     for idx, decision in enumerate(final_decisions):
         compiled_report += f"Group {idx+1} - {decision[0]}\n{decision[1]}\n\n"
+    #print('Compiled report: ', compiled_report)
+    history_process += compiled_report
 
     # Decisión final por un agente principal
-    decision_prompt = "You are an experienced medical expert. Given the investigations from MDT..."
+    decision_prompt = f"""You are an experienced medical expert. Now, given the investigations from multidisciplinary teams (MDT), please review them very carefully and return your final decision to the medical query.
+    Always start with your final decision. After that, provide the explanation."""
     decision_agent = Agent(instruction=decision_prompt, role='decision maker', model_info=model)
     decision_agent.chat(decision_prompt, img_path=img_path)
     
@@ -242,5 +252,5 @@ def process_advanced_query(question, model, args, img_path=None):
         f"Investigation:\n{initial_assessment_report}\n\nQuestion: {question}",
         img_path=img_path
     )
-
-    return final_decision
+    history_process += str(final_decision)
+    return final_decision, history_process
