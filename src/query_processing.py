@@ -140,46 +140,50 @@ def process_intermediate_query(question, examplers, model, args, img_path=None):
 def process_advanced_query(question, model, args, img_path=None):
     history_process = ""
     #print("[STEP 1] Recruitment")
-    history_process += f"[STEP 1] Recruitment \n\n"
+    history_process += f"[PASO 1] Reclutamiento \n\n"
     group_instances = []
     # Reclutamiento de múltiples equipos (MDT), ver código original.
-    recruit_prompt = f"""You are an experienced medical expert. 
-    Given the complex medical query, you need to organize Multidisciplinary Teams (MDTs) and the members in MDT to
-    make accurate and robust answer."""
-    tmp_agent = Agent(instruction=recruit_prompt, role='recruiter', model_info=model)
+    recruit_prompt = f"""Eres un médico experto con mucha experiencia. 
+    Dada la compleja consulta médica, necesitas organizar Equipos Multidisciplinarios (MDTs) y los miembros de cada MDT para
+    proporcionar una respuesta precisa y robusta."""
+    tmp_agent = Agent(
+        instruction=recruit_prompt, 
+        role='recruiter', 
+        model_info=model)
+
     tmp_agent.chat(recruit_prompt, img_path=img_path)
 
     num_teams = 3
     num_agents = 3
     recruited = tmp_agent.chat(
-        f"""Question: {question}
+        f"""Pregunta: {question}
         
-        You should organize {num_teams} MDTs with different specialties or purposes and each MDT should have {num_agents} clinicians. 
-        Considering the medical question and the options, please return your recruitment plan to better make an accurate answer.
+        Debes organizar {num_teams} MDTs con diferentes especialidades o propósitos, y cada MDT debe tener {num_agents} clínicos. 
+        Considerando la pregunta médica y las opciones, por favor devuelve tu plan de reclutamiento para ofrecer una respuesta más precisa.
 
 
-        For example, the following can an example answer:
-        Group 1 - Initial Assessment Team (IAT)
-        Member 1: Otolaryngologist (ENT Surgeon) (Lead) - Specializes in ear, nose, and throat surgery, including thyroidectomy. This member leads the group due to their critical role in the surgical intervention and managing any surgical complications, such as nerve damage.
-        Member 2: General Surgeon - Provides additional surgical expertise and supports in the overall management of thyroid surgery complications.
-        Member 3: Anesthesiologist - Focuses on perioperative care, pain management, and assessing any complications from anesthesia that may impact voice and airway function.
+        Por ejemplo, el siguiente puede ser un ejemplo de respuesta:
+        Grupo 1 - Equipo de Evaluación Inicial (IAT)
+        Miembro 1: Otorrinolaringólogo (Cirujano ENT) (Líder) - Especialista en cirugía de oído, nariz y garganta, incluyendo tiroidectomía. Este miembro lidera el grupo debido a su papel crítico en la intervención quirúrgica y la gestión de cualquier complicación quirúrgica, como el daño a los nervios.
+        Miembro 2: Cirujano General - Proporciona experiencia quirúrgica adicional y apoyo en la gestión general de las complicaciones de la cirugía tiroidea.
+        Miembro 3: Anestesiólogo - Se centra en el cuidado perioperatorio, el manejo del dolor y la evaluación de cualquier complicación de la anestesia que pueda afectar la voz y la función de las vías respiratorias.
         
-        Group 2 - Diagnostic Evidence Team (DET)
-        Member 1: Endocrinologist (Lead) - Oversees the long-term management of Graves' disease, including hormonal therapy and monitoring for any related complications post-surgery.
-        Member 2: Speech-Language Pathologist - Specializes in voice and swallowing disorders, providing rehabilitation services to improve the patient's speech and voice quality following nerve damage.
-        Member 3: Neurologist - Assesses and advises on nerve damage and potential recovery strategies, contributing neurological expertise to the patient's care.
+        Grupo 2 - Equipo de Evidencia Diagnóstica (DET)
+        Miembro 1: Endocrinólogo (Líder) - Supervisa la gestión a largo plazo de la enfermedad de Graves, incluyendo la terapia hormonal y el monitoreo de cualquier complicación relacionada después de la cirugía.
+        Miembro 2: Patólogo del Habla y Lenguaje - Especialista en trastornos de la voz y deglución, proporcionando servicios de rehabilitación para mejorar la calidad del habla y la voz del paciente tras el daño nervioso.
+        Miembro 3: Neurólogo - Evalúa y asesora sobre el daño nervioso y las posibles estrategias de recuperación, aportando experiencia neurológica al cuidado del paciente.
         
-        Group 3 - Patient History Team (PHT)
-        Member 1: Psychiatrist or Psychologist (Lead) - Addresses any psychological impacts of the chronic disease and its treatments, including issues related to voice changes, self-esteem, and coping strategies.
-        Member 2: Physical Therapist - Offers exercises and strategies to maintain physical health and potentially support vocal function recovery indirectly through overall well-being.
-        Member 3: Vocational Therapist - Assists the patient in adapting to changes in voice, especially if their profession relies heavily on vocal communication, helping them find strategies to maintain their occupational roles.
+        Grupo 3 - Equipo de Historia del Paciente (PHT)
+        Miembro 1: Psiquiatra o Psicólogo (Líder) - Aborda cualquier impacto psicológico de la enfermedad crónica y sus tratamientos, incluyendo problemas relacionados con los cambios en la voz, la autoestima y las estrategias de afrontamiento.
+        Miembro 2: Fisioterapeuta - Ofrece ejercicios y estrategias para mantener la salud física y potencialmente apoyar la recuperación de la función vocal indirectamente a través del bienestar general.
+        Miembro 3: Terapeuta Ocupacional - Ayuda al paciente a adaptarse a los cambios en la voz, especialmente si su profesión depende en gran medida de la comunicación vocal, ayudándolo a encontrar estrategias para mantener sus roles ocupacionales.
         
-        Group 4 - Final Review and Decision Team (FRDT)
-        Member 1: Senior Consultant from each specialty (Lead) - Provides overarching expertise and guidance in decision
-        Member 2: Clinical Decision Specialist - Coordinates the different recommendations from the various teams and formulates a comprehensive treatment plan.
-        Member 3: Advanced Diagnostic Support - Utilizes advanced diagnostic tools and techniques to confirm the exact extent and cause of nerve damage, aiding in the final decision.
+        Grupo 4 - Equipo de Revisión y Decisión Final (FRDT)
+        Miembro 1: Consultor Senior de cada especialidad (Líder) - Proporciona experiencia general y orientación en la toma de decisiones
+        Miembro 2: Especialista en Decisiones Clínicas - Coordina las diferentes recomendaciones de los diversos equipos y formula un plan de tratamiento integral.
+        Miembro 3: Soporte Diagnóstico Avanzado - Utiliza herramientas y técnicas de diagnóstico avanzadas para confirmar el alcance exacto y la causa del daño nervioso, ayudando en la decisión final.
         
-        Above is just an example, thus, you should organize your own unique MDTs but you should include Initial Assessment Team (IAT) and Final Review and Decision Team (FRDT) in your recruitment plan. When you return your answer, please strictly refer to the above format.""",
+        Lo anterior es solo un ejemplo, por lo tanto, debes organizar tus propios MDTs únicos, pero debes incluir al Equipo de Evaluación Inicial (IAT) y al Equipo de Revisión y Decisión Final (FRDT) en tu plan de reclutamiento. Al devolver tu respuesta, refiérete estrictamente al formato anterior.""",
         img_path)
 
 
@@ -191,28 +195,33 @@ def process_advanced_query(question, model, args, img_path=None):
     for i1, gs in enumerate(group_strings):
         res_gs = parse_group_info(gs)
     #    print(f"Group {i1+1} - {res_gs['group_goal']}")
-        history_process += f"Group {i1+1} - {res_gs['group_goal']}\n"
+        history_process += f"Grupo {i1+1} - {res_gs['group_goal']}\n"
         for i2, member in enumerate(res_gs['members']):
     #        print(f" Member {i2+1} ({member['role']}): {member['expertise_description']}")
-            history_process += f" Member {i2+1} ({member['role']}): {member['expertise_description']}\n"
+            history_process += f" Miembro {i2+1} ({member['role']}): {member['expertise_description']}\n"
 
-        group_instance = Group(res_gs['group_goal'], res_gs['members'], question, examplers=None, img_path=img_path)
+        group_instance = Group(
+            res_gs['group_goal'], 
+            res_gs['members'], 
+            question, 
+            examplers=None, 
+            img_path=img_path)
         group_instances.append(group_instance)
 
     #print("[STEP 2] Initial assessment from each group")
-    history_process += f"\n[STEP 2] Initial assessment from each group\n\n"
+    history_process += f"\n[PASO 2] Evaluación inicial de cada grupo\n\n"
     # Interacciones iniciales de grupos, etc.
     # Por simplicidad, asumimos un flujo similar:
     initial_assessments = []
     for group_instance in group_instances:
         if 'initial' in group_instance.goal.lower() or 'iap' in group_instance.goal.lower():
-            init_assessment = group_instance.interact(comm_type='internal',message=None, img_path=img_path)
+            init_assessment = group_instance.interact(comm_type='internal',img_path=img_path)
             initial_assessments.append([group_instance.goal, init_assessment])
     #print("Initial Assessment", initial_assessments)
 
     initial_assessment_report = ""
     for idx, init_assess in enumerate(initial_assessments):
-        initial_assessment_report += f"Group {idx+1} - {init_assess[0]}\n{init_assess[1]}\n\n"
+        initial_assessment_report += f"Grupo {idx+1} - {init_assess[0]}\n{init_assess[1]}\n\n"
     #print("Reports:", initial_assessment_report)
     history_process += initial_assessment_report
     # Otros MDTs STEP 2.2
@@ -225,7 +234,7 @@ def process_advanced_query(question, model, args, img_path=None):
 
     assessment_report = ""
     for idx, assess in enumerate(assessments):
-        assessment_report += f"Group {idx+1} - {assess[0]}\n{assess[1]}\n\n"
+        assessment_report += f"Grupo {idx+1} - {assess[0]}\n{assess[1]}\n\n"
     #print('Otros Assessment report: ', assessment_report)
     history_process += assessment_report
 
@@ -238,18 +247,20 @@ def process_advanced_query(question, model, args, img_path=None):
     
     compiled_report = ""
     for idx, decision in enumerate(final_decisions):
-        compiled_report += f"Group {idx+1} - {decision[0]}\n{decision[1]}\n\n"
+        compiled_report += f"Grupo {idx+1} - {decision[0]}\n{decision[1]}\n\n"
     #print('Compiled report: ', compiled_report)
     history_process += compiled_report
 
     # Decisión final por un agente principal
-    decision_prompt = f"""You are an experienced medical expert. Now, given the investigations from multidisciplinary teams (MDT), please review them very carefully and return your final decision to the medical query.
-    Always start with your final decision. After that, provide the explanation."""
+    decision_prompt =f"""Eres un médico experto. Dadas las investigaciones de los equipos multidisciplinarios (MDT), por favor revísalas muy cuidadosamente y devuelve tu decisión final para la consulta médica.
+    Siempre comienza con tu decisión final. Después de eso, proporciona la explicación. Recuerda siempre responder en español y siempre indicar la alternativa escogida."""
     decision_agent = Agent(instruction=decision_prompt, role='decision maker', model_info=model)
     decision_agent.chat(decision_prompt, img_path=img_path)
     
+    # Para OpenAI podemos usar temp_responses, para otros proveedores usamos chat normal
+
     final_decision = decision_agent.temp_responses(
-        f"Investigation:\n{initial_assessment_report}\n\nQuestion: {question}",
+        f"Investigación:\n{initial_assessment_report}\n\nPregunta: {question}",
         img_path=img_path
     )
     history_process += str(final_decision)

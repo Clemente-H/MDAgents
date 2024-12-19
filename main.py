@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--model', type=str, default='gpt-4o-mini')
     # parser.add_argument('--difficulty', type=str, default='adaptive')
     # parser.add_argument('--num_samples', type=int, default=100)
+    parser.add_argument('--start_index', type=int, default=0)
+
     args = parser.parse_args()
     df = pd.read_excel(args.dataset)
     #model, client = setup_model(args.model)
@@ -35,11 +37,13 @@ def main():
     random.shuffle(agent_emoji)
 
     results = []
+    current_time = datetime.now()
+    formatted_time = current_time.strftime("%Y%m%d_%H%M%S") 
 
-
-    for no, sample in tqdm(df.iterrows(), total=len(df)):
+    # Iterar desde el índice de inicio
+    for no, sample in tqdm(df.iloc[args.start_index:].iterrows(),total=len(df),initial=args.start_index):
         image_path = os.path.join('../', sample['ruta'])
-
+        image_path = os.path.join('../', sample['ruta'])
         # Check image size
         is_valid_size, file_size = check_image_size(image_path, max_size_mb=4.0)
         if os.path.exists(image_path) and is_valid_size:
@@ -73,6 +77,14 @@ def main():
                     'history':'no hay, hubo problem xdxd',
                 }
             results.append(respuesta)
+         # Guardar resultados cada 10 iteraciones
+            if (no + 1) % 10 == 0:
+                output_file = f'results/{args.model}_{formatted_time}_batch_{no+1}.json'
+                with open(output_file, 'w') as file:
+                    json.dump(results, file, indent=4)
+                print(f"[INFO] Resultados parciales guardados en {output_file}")
+
+            
 
     # Guardar resultados
     path = os.path.join(os.getcwd(), 'output')
@@ -80,9 +92,8 @@ def main():
         os.makedirs(path)
 
 
-    current_time = datetime.now()
-    formatted_time = current_time.strftime("%Y%m%d_%H%M%S")  # Ejemplo: 20241216_153045
-    output_file = f'output/{args.model}_{formatted_time}_advancedquery.json'
+ # Ejemplo: 20241216_153045
+    output_file = f'results/{args.model}_{formatted_time}_advancedquery.json'
 #    output_file = f'output/{args.model}_{args.dataset}_advancedquery.json'
     with open(output_file, 'w') as file:
         json.dump(results, file, indent=4)
